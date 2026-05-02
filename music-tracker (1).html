@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Music Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --surface2: #1f1f1f;
+    --border: #2a2a2a;
+    --border2: #383838;
+    --text: #f0f0f0;
+    --text2: #888;
+    --text3: #555;
+    --accent-gd: #7FFF00;
+    --accent-em: #ff3c00;
+    --heard: #3b82f6;
+    --like: #22c55e;
+    --love: #f59e0b;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  .site-header {
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    background: rgba(13,13,13,0.92);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+  }
+  .site-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    color: var(--text);
+  }
+  .site-title span { color: var(--accent-gd); }
+  .header-stats {
+    display: flex;
+    gap: 20px;
+  }
+  .hstat { text-align: right; }
+  .hstat-num { font-family: 'IBM Plex Mono', monospace; font-size: 18px; font-weight: 500; }
+  .hstat-lbl { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; }
+  .hstat-num.c-heard { color: var(--heard); }
+  .hstat-num.c-like { color: var(--like); }
+  .hstat-num.c-love { color: var(--love); }
+
+  /* MAIN LAYOUT */
+  .layout { display: grid; grid-template-columns: 220px 1fr; min-height: calc(100vh - 56px); }
+
+  /* SIDEBAR */
+  .sidebar {
+    border-right: 1px solid var(--border);
+    padding: 20px 0;
+    position: sticky;
+    top: 56px;
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+  }
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .sidebar-section { margin-bottom: 24px; }
+  .sidebar-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text3);
+    padding: 0 16px;
+    margin-bottom: 6px;
+  }
+  .artist-tab {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    cursor: pointer;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    color: var(--text2);
+  }
+  .artist-tab:hover { color: var(--text); background: var(--surface); }
+  .artist-tab.active { color: var(--text); border-left-color: var(--accent-gd); background: var(--surface); }
+  .artist-tab.active.em { border-left-color: var(--accent-em); }
+  .artist-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .dot-gd { background: var(--accent-gd); }
+  .dot-em { background: var(--accent-em); }
+  .artist-tab-name { font-weight: 500; font-size: 13px; }
+
+  .search-wrap { padding: 0 12px; margin-bottom: 8px; }
+  .search-wrap input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 10px;
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-wrap input:focus { border-color: var(--border2); }
+  .search-wrap input::placeholder { color: var(--text3); }
+
+  .filter-group { padding: 0 12px; display: flex; flex-direction: column; gap: 3px; }
+  .filter-btn {
+    background: none; border: none; cursor: pointer;
+    padding: 7px 8px; border-radius: 5px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 12px; color: var(--text2);
+    text-align: left; display: flex; align-items: center; gap: 8px;
+    transition: all 0.12s;
+  }
+  .filter-btn:hover { background: var(--surface); color: var(--text); }
+  .filter-btn.active { background: var(--surface2); color: var(--text); }
+  .filter-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .fd-all { background: var(--text3); }
+  .fd-heard { background: var(--heard); }
+  .fd-like { background: var(--like); }
+  .fd-love { background: var(--love); }
+  .fd-unheard { border: 1px solid var(--text3); }
+
+  /* MAIN CONTENT */
+  .main { padding: 24px 28px; overflow-y: auto; }
+
+  .artist-section { margin-bottom: 48px; }
+  .artist-section.hidden { display: none; }
+
+  .artist-heading {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px;
+    letter-spacing: 3px;
+    margin-bottom: 4px;
+    line-height: 1;
+  }
+  .artist-heading.gd { color: var(--accent-gd); }
+  .artist-heading.em { color: var(--accent-em); }
+  .artist-sub { font-size: 12px; color: var(--text3); font-family: 'IBM Plex Mono', monospace; margin-bottom: 24px; }
+
+  .album-block { margin-bottom: 16px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .album-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 16px; cursor: pointer;
+    background: var(--surface);
+    user-select: none;
+    transition: background 0.12s;
+  }
+  .album-header:hover { background: var(--surface2); }
+  .album-left { display: flex; align-items: baseline; gap: 10px; }
+  .album-name { font-weight: 500; font-size: 14px; }
+  .album-year {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; color: var(--text3);
+  }
+  .album-right { display: flex; align-items: center; gap: 12px; }
+  .album-progress { font-size: 11px; color: var(--text3); font-family: 'IBM Plex Mono', monospace; }
+  .progress-bar-wrap { width: 60px; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; border-radius: 2px; background: var(--heard); transition: width 0.3s; }
+  .chevron { font-size: 10px; color: var(--text3); transition: transform 0.2s; }
+  .album-header.collapsed .chevron { transform: rotate(-90deg); }
+
+  .song-list { display: none; }
+  .song-list.open { display: block; }
+
+  .song-row {
+    display: flex; align-items: center;
+    padding: 8px 16px; gap: 12px;
+    border-top: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  .song-row:hover { background: var(--surface); }
+  .song-row.filtered-out { display: none; }
+  .song-num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text3); width: 20px; flex-shrink: 0; text-align: right; }
+  .song-name { flex: 1; font-size: 13px; }
+  .song-btns { display: flex; gap: 6px; }
+
+  .sbt {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: 1px solid var(--border2);
+    background: none;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.12s;
+    opacity: 0.35;
+    position: relative;
+  }
+  .sbt:hover { opacity: 0.75; border-color: var(--border2); }
+  .sbt.on-heard { opacity: 1; background: rgba(59,130,246,0.15); border-color: rgba(59,130,246,0.5); }
+  .sbt.on-like  { opacity: 1; background: rgba(34,197,94,0.15);  border-color: rgba(34,197,94,0.5); }
+  .sbt.on-love  { opacity: 1; background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.5); }
+
+  .empty-state { padding: 40px; text-align: center; color: var(--text3); font-size: 13px; }
+
+  /* Mobile */
+  @media (max-width: 680px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); padding: 12px 0; }
+    .header-stats { gap: 12px; }
+    .main { padding: 16px; }
+    .artist-heading { font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-title">TRACK<span>LIST</span></div>
+  <div class="header-stats">
+    <div class="hstat"><div class="hstat-num c-heard" id="gs-heard">0</div><div class="hstat-lbl">heard</div></div>
+    <div class="hstat"><div class="hstat-num c-like" id="gs-like">0</div><div class="hstat-lbl">like</div></div>
+    <div class="hstat"><div class="hstat-num c-love" id="gs-love">0</div><div class="hstat-lbl">love</div></div>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Artists</div>
+      <div class="artist-tab active" data-artist="all" onclick="setArtist('all')">
+        <div class="artist-dot" style="background:var(--text3)"></div>
+        <span class="artist-tab-name">All artists</span>
+      </div>
+      <div class="artist-tab" data-artist="greenday" onclick="setArtist('greenday')">
+        <div class="artist-dot dot-gd"></div>
+        <span class="artist-tab-name">Green Day</span>
+      </div>
+      <div class="artist-tab em" data-artist="eminem" onclick="setArtist('eminem')">
+        <div class="artist-dot dot-em"></div>
+        <span class="artist-tab-name">Eminem</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Search</div>
+      <div class="search-wrap">
+        <input type="text" id="search-input" placeholder="Search songs..." oninput="setSearch(this.value)">
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Filter</div>
+      <div class="filter-group">
+        <button class="filter-btn active" data-f="all" onclick="setFilter('all')"><span class="filter-dot fd-all"></span>All songs</button>
+        <button class="filter-btn" data-f="heard" onclick="setFilter('heard')"><span class="filter-dot fd-heard"></span>Heard</button>
+        <button class="filter-btn" data-f="like" onclick="setFilter('like')"><span class="filter-dot fd-like"></span>Like</button>
+        <button class="filter-btn" data-f="love" onclick="setFilter('love')"><span class="filter-dot fd-love"></span>Love</button>
+        <button class="filter-btn" data-f="unheard" onclick="setFilter('unheard')"><span class="filter-dot fd-unheard"></span>Unheard</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main" id="main-content">
+    <!-- rendered by JS -->
+  </main>
+</div>
+
+<script>
+const ARTISTS = [
+  {
+    id: "greenday",
+    name: "Green Day",
+    cls: "gd",
+    sub: "14 studio albums · 1987–present",
+    albums: [
+      { id: "39smooth", title: "39/Smooth", year: 1990, songs: ["At the Library","Don't Leave Me","I Was There","Disappearing Boy","Green Day","Going to Pasalacqua","16","Road to Acceptance","Rest","The Judge's Daughter"] },
+      { id: "kerplunk", title: "Kerplunk", year: 1992, songs: ["2000 Light Years Away","One for the Razorbacks","Welcome to Paradise","Christie Road","Private Ale","Dominated Love Slave","One of My Lies","80","Android","No One Knows","Who Wrote Holden Caulfield?","Words I Might Have Ate"] },
+      { id: "dookie", title: "Dookie", year: 1994, songs: ["Burnout","Having a Blast","Chump","Longview","Welcome to Paradise","Pulling Teeth","Basketcase","She","Sassafras Roots","When I Come Around","Coming Clean","Emenius Sleepus","In the End","F.O.D."] },
+      { id: "insomniac", title: "Insomniac", year: 1995, songs: ["Armatage Shanks","Brat","Stuck with Me","Geek Stink Breath","No Pride","Bab's Uvula Who?","86","Panic Song","Stuart and the Ave.","Brain Stew","Jaded","Westbound Sign","Tight Wad Hill","Walking Contradiction"] },
+      { id: "nimrod", title: "Nimrod", year: 1997, songs: ["Nice Guys Finish Last","Hitchin' a Ride","The Grouch","Redundant","Scattered","All the Time","Worry Rock","Platypus (I Hate You)","Uptight","Last Ride In","Jinx","Haushinka","Walking Alone","Reject","Take Back","King for a Day","Good Riddance (Time of Your Life)","Prosthetic Head"] },
+      { id: "warning", title: "Warning", year: 2000, songs: ["Warning","Blood, Sex and Booze","Church on Sunday","Fashion Victim","Castaway","Misery","Deadbeat Holiday","Hold On","Jackass","Waiting","Minority","Macy's Day Parade"] },
+      { id: "american-idiot", title: "American Idiot", year: 2004, songs: ["American Idiot","Jesus of Suburbia","Holiday","Boulevard of Broken Dreams","Are We the Waiting","St. Jimmy","Give Me Novacaine","She's a Rebel","Extraordinary Girl","Letterbomb","Wake Me Up When September Ends","Homecoming","Whatsername"] },
+      { id: "21cb", title: "21st Century Breakdown", year: 2009, songs: ["Song of the Century","21st Century Breakdown","Know Your Enemy","Viva La Gloria!","Before the Lobotomy","Christian's Inferno","Last Night on Earth","East Jesus Nowhere","Peacemaker","Last of the American Girls","Murder City","¿Viva La Gloria? (Little Girl)","Restless Heart Syndrome","Horseshoes and Handgrenades","The Static Age","21 Guns","American Eulogy","See the Light"] },
+      { id: "uno", title: "¡Uno!", year: 2012, songs: ["Nuclear Family","Stay the Night","Carpe Diem","Let Yourself Go","Kill the DJ","Fell for You","Loss of Control","Troublemaker","Angel Blue","Sweet 16","Rusty James","Oh Love"] },
+      { id: "dos", title: "¡Dos!", year: 2012, songs: ["See You Tonight","Fuck Time","Stop When the Red Lights Flash","Lazy Bones","Wild One","Makeout Party","Stray Heart","Ashley","Baby Eyes","Lady Cobra","Nightlife","Wow! That's Loud","Amy"] },
+      { id: "tre", title: "¡Tré!", year: 2012, songs: ["Brutal Love","Missing You","8th Avenue Serenade","Drama Queen","X-Kid","Sex, Drugs & Violence","A Little Boy Named Train","Amanda","Walk Away","Dirty Rotten Bastards","99 Revolutions","The Forgotten"] },
+      { id: "revolution-radio", title: "Revolution Radio", year: 2016, songs: ["Somewhere Now","Bang Bang","Revolution Radio","Say Goodbye","Outlaws","Bouncing off the Wall","Still Breathing","Youngblood","Too Dumb to Die","Troubled Times","Forever Now","Ordinary World"] },
+      { id: "father-of-all", title: "Father of All...", year: 2020, songs: ["Father of All...","Fire, Ready, Aim","Oh Yeah!","Meet Me on the Roof","I Was a Teenage Teenager","Stab You in the Heart","Sugar Youth","Junkies on a High","Take the Money and Crawl","Graffitia"] },
+      { id: "saviors", title: "Saviors", year: 2024, songs: ["The American Dream Is Killing Me","Look Ma, No Brains!","Bobby Sox","One Eyed Bastard","Suzie Chapstick","Living in the '20s","Corvette Summer","Dilemma","Father to a Son","Goodnight Adeline","Strange Days Are Here to Stay","Fancy Sauce","Love Is for Losers","Saviors"] },
+    ]
+  },
+  {
+    id: "eminem",
+    name: "Eminem",
+    cls: "em",
+    sub: "11 studio albums · 1996–present",
+    albums: [
+      { id: "infinite", title: "Infinite", year: 1996, songs: ["Infinite","W.E.G.O. (Interlude)","It's OK","313","Tonite","Maxine","Open Mic","Never 2 Far","Searchin'","Backstabber","Jealousy Woes II"] },
+      { id: "slim-shady-lp", title: "The Slim Shady LP", year: 1999, songs: ["Public Service Announcement","My Name Is","Guilty Conscience","Brain Damage","Paul (Skit)","If I Had...","97 Bonnie & Clyde","Bitch","Role Model","Lounge (Skit)","My Fault","Ken Kaniff (Skit)","Cum on Everybody","Rock Bottom","Just Don't Give a F**k","Soap (Skit)","As the World Turns","I'm Shady","Bad Meets Evil","Still Don't Give a F**k"] },
+      { id: "marshall-mathers", title: "The Marshall Mathers LP", year: 2000, songs: ["Public Service Announcement 2000","Kill You","Stan","Paul (Skit)","Who Knew","Steve Berman (Skit)","The Way I Am","The Real Slim Shady","Remember Me?","I'm Back","Marshall Mathers","Ken Kaniff (Skit)","Drug Ballad","Amityville","Bitch Please II","Kim","Under the Influence","Criminal"] },
+      { id: "eminem-show", title: "The Eminem Show", year: 2002, songs: ["Curtains Up (Skit)","White America","Business","Cleanin' Out My Closet","Square Dance","The Kiss (Skit)","Soldier","Say Goodbye Hollywood","Drips","Without Me","Paul Rosenberg (Skit)","Sing for the Moment","Superman","Hallie's Song","Steve Berman (Skit)","When the Music Stops","Say What You Say","'Till I Collapse","My Dad's Gone Crazy","Curtains Close (Skit)"] },
+      { id: "encore", title: "Encore", year: 2004, songs: ["Curtains Up","Evil Deeds","Never Enough","Yellow Brick Road","Like Toy Soldiers","Mosh","Puke","My 1st Single","Paul (Skit)","Rain Man","Big Weenie","Em Calls Paul (Skit)","Just Lose It","Ass Like That","Spend Some Time","Mockingbird","Crazy in Love","One Shot 2 Shot","Final Thought (Skit)","Encore/Curtains Down"] },
+      { id: "relapse", title: "Relapse", year: 2009, songs: ["Dr. West (Skit)","3 A.M.","My Mom","Insane","Bagpipes from Baghdad","Hello","Tonya (Skit)","Same Song & Dance","We Made You","Medicine Ball","Paul (Skit)","Stay Wide Awake","Old Time's Sake","Must Be the Ganja","Mr. Mathers (Skit)","Deja Vu","Beautiful","Crack a Bottle","Steve Berman (Skit)","Underground","My Darling","Careful What You Wish For"] },
+      { id: "recovery", title: "Recovery", year: 2010, songs: ["Cold Wind Blows","Talkin' 2 Myself","On Fire","Won't Back Down","W.T.P.","Going Through Changes","Not Afraid","Seduction","No Love","Space Bound","Cinderella Man","25 to Life","So Bad","Almost Famous","Love the Way You Lie","You're Never Over","Untitled"] },
+      { id: "mmlp2", title: "The Marshall Mathers LP 2", year: 2013, songs: ["Bad Guy","Parking Lot (Skit)","Rhyme or Reason","So Much Better","Survival","Legacy","Asshole","Berzerk","Rap God","Brainless","Stronger Than I Was","The Monster","So Far...","Love Game","Headlights","Evil Twin"] },
+      { id: "revival", title: "Revival", year: 2017, songs: ["Walk on Water","Believe","Chloraseptic","Untouchable","River","Remind Me (Intro)","Remind Me","Like Home","Bad Husband","Tragic Endings","Framed","Nowhere Fast","Heat","Offended","Need Me","In Your Head","Castle","Arose"] },
+      { id: "kamikaze", title: "Kamikaze", year: 2018, songs: ["The Ringer","Greatest","Lucky You","Paul (Skit)","Normal","Em Calls Paul","Stepping Stone","Not Alike","Kamikaze","Fall","Let Me Go","Nice Guy","Good Guy","Venom"] },
+      { id: "music-to-be-murdered-by", title: "Music to Be Murdered By", year: 2020, songs: ["Premonition (Intro)","Unaccommodating","You Gon' Learn","Alfred (Interlude)","Those Kinda Nights","In Too Deep","Godzilla","Darkness","Leaving Heaven","Yah Yah","Stepdad (Skit)","Marsh","Never Love Again","Little Engine","Lock It Up","Farewell","No Regrets","I Will","Alfred (Outro)"] },
+    ]
+  }
+];
+
+let state = {};
+let activeArtist = "all";
+let activeFilter = "all";
+let searchTerm = "";
+let openAlbums = new Set(); // tracks which albums are expanded
+
+try { const s = localStorage.getItem('tracklist_v2'); if (s) state = JSON.parse(s); } catch(e) {}
+
+function save() { try { localStorage.setItem('tracklist_v2', JSON.stringify(state)); } catch(e) {} }
+
+function key(albumId, idx) { return `${albumId}__${idx}`; }
+
+// Update only the parts that changed when a button is toggled, without re-rendering
+function toggle(albumId, idx, type) {
+  const k = key(albumId, idx);
+  if (!state[k]) state[k] = {};
+  const s = state[k];
+  if (type === "heard") {
+    s.heard = !s.heard;
+    if (!s.heard) { s.like = false; s.love = false; }
+  } else if (type === "like") {
+    s.like = !s.like;
+    if (s.like) { s.heard = true; s.love = false; }
+  } else if (type === "love") {
+    s.love = !s.love;
+    if (s.love) { s.heard = true; s.like = false; }
+  }
+  save();
+
+  // Update only the affected song row's buttons (no full re-render)
+  const row = document.querySelector(`.sbt[data-a="${albumId}"][data-i="${idx}"][data-t="heard"]`)?.closest('.song-row');
+  if (row) {
+    const cur = state[k] || {};
+    row.querySelector('[data-t="heard"]').className = `sbt ${cur.heard ? 'on-heard' : ''}`;
+    row.querySelector('[data-t="like"]').className  = `sbt ${cur.like  ? 'on-like'  : ''}`;
+    row.querySelector('[data-t="love"]').className  = `sbt ${cur.love  ? 'on-love'  : ''}`;
+    // If active filter now excludes this row, hide it
+    if (!matchesFilter(k)) row.classList.add('filtered-out');
+  }
+
+  // Update header stats and album progress bar without full re-render
+  updateStats();
+  updateAlbumProgress(albumId);
+}
+
+function updateStats() {
+  let totHeard = 0, totLike = 0, totLove = 0;
+  ARTISTS.forEach(artist => artist.albums.forEach(album => album.songs.forEach((_, i) => {
+    const s = state[key(album.id, i)] || {};
+    if (s.heard) totHeard++;
+    if (s.like) totLike++;
+    if (s.love) totLove++;
+  })));
+  document.getElementById('gs-heard').textContent = totHeard;
+  document.getElementById('gs-like').textContent = totLike;
+  document.getElementById('gs-love').textContent = totLove;
+}
+
+function updateAlbumProgress(albumId) {
+  const artist = ARTISTS.find(a => a.albums.some(al => al.id === albumId));
+  if (!artist) return;
+  const album = artist.albums.find(al => al.id === albumId);
+  if (!album) return;
+  const heardCount = album.songs.filter((_, i) => (state[key(albumId, i)] || {}).heard).length;
+  const pct = album.songs.length ? Math.round(heardCount / album.songs.length * 100) : 0;
+  const block = document.querySelector(`.album-block[data-album-id="${albumId}"]`);
+  if (!block) return;
+  block.querySelector('.album-progress').textContent = `${heardCount}/${album.songs.length}`;
+  block.querySelector('.progress-bar-fill').style.width = pct + '%';
+}
+
+function setArtist(a) {
+  activeArtist = a;
+  document.querySelectorAll('.artist-tab').forEach(t => t.classList.toggle('active', t.dataset.artist === a));
+  renderAll();
+}
+
+function setFilter(f) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.f === f));
+  renderAll();
+}
+
+function setSearch(v) {
+  searchTerm = v.toLowerCase().trim();
+  renderAll();
+}
+
+function matchesFilter(k) {
+  const s = state[k] || {};
+  if (activeFilter === "all") return true;
+  if (activeFilter === "heard") return !!s.heard;
+  if (activeFilter === "like") return !!s.like;
+  if (activeFilter === "love") return !!s.love;
+  if (activeFilter === "unheard") return !s.heard;
+  return true;
+}
+
+function toggleAlbum(albumId, hdr, list) {
+  const isOpen = list.classList.toggle('open');
+  hdr.classList.toggle('collapsed', !isOpen);
+  if (isOpen) openAlbums.add(albumId);
+  else openAlbums.delete(albumId);
+  updateExpandBtn();
+}
+
+function updateExpandBtn() {
+  // Count all visible album blocks
+  const allBlocks = document.querySelectorAll('.album-block');
+  const allOpen = [...allBlocks].every(b => b.querySelector('.song-list')?.classList.contains('open'));
+  const btn = document.getElementById('expand-all-btn');
+  if (btn) btn.textContent = allOpen ? 'Collapse all' : 'Expand all';
+}
+
+function expandCollapseAll() {
+  const allBlocks = document.querySelectorAll('.album-block');
+  const allOpen = [...allBlocks].every(b => b.querySelector('.song-list')?.classList.contains('open'));
+  allBlocks.forEach(block => {
+    const list = block.querySelector('.song-list');
+    const hdr = block.querySelector('.album-header');
+    const albumId = block.dataset.albumId;
+    if (allOpen) {
+      list.classList.remove('open');
+      hdr.classList.add('collapsed');
+      openAlbums.delete(albumId);
+    } else {
+      list.classList.add('open');
+      hdr.classList.remove('collapsed');
+      openAlbums.add(albumId);
+    }
+  });
+  updateExpandBtn();
+}
+
+function renderAll() {
+  const container = document.getElementById('main-content');
+  container.innerHTML = '';
+
+  updateStats();
+
+  let anyVisible = false;
+
+  ARTISTS.forEach(artist => {
+    if (activeArtist !== "all" && activeArtist !== artist.id) return;
+
+    const section = document.createElement('section');
+    section.className = 'artist-section';
+
+    // Artist heading row with expand/collapse all button
+    const artistTopRow = document.createElement('div');
+    artistTopRow.style.cssText = 'display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:4px';
+    const heading = document.createElement('div');
+    heading.className = `artist-heading ${artist.cls}`;
+    heading.textContent = artist.name;
+    artistTopRow.appendChild(heading);
+    section.appendChild(artistTopRow);
+
+    const sub = document.createElement('div');
+    sub.className = 'artist-sub';
+    sub.style.marginBottom = '12px';
+    sub.textContent = artist.sub;
+    section.appendChild(sub);
+
+    // Expand/collapse all button (one per artist section, or shared if all artists shown)
+    const expandBtn = document.createElement('button');
+    expandBtn.id = 'expand-all-btn';
+    expandBtn.textContent = 'Expand all';
+    expandBtn.style.cssText = 'background:none;border:1px solid var(--border2);border-radius:5px;color:var(--text2);font-family:inherit;font-size:11px;padding:4px 10px;cursor:pointer;margin-bottom:16px;transition:all 0.12s;';
+    expandBtn.onmouseenter = () => expandBtn.style.color = 'var(--text)';
+    expandBtn.onmouseleave = () => expandBtn.style.color = 'var(--text2)';
+    expandBtn.onclick = expandCollapseAll;
+    section.appendChild(expandBtn);
+
+    let artistHasVisible = false;
+
+    artist.albums.forEach(album => {
+      const heardCount = album.songs.filter((_, i) => (state[key(album.id, i)] || {}).heard).length;
+      const pct = album.songs.length ? Math.round(heardCount / album.songs.length * 100) : 0;
+
+      const block = document.createElement('div');
+      block.className = 'album-block';
+      block.dataset.albumId = album.id;
+
+      const hdr = document.createElement('div');
+      // Restore open state from openAlbums set; auto-open when filtering
+      const forceOpen = !!(searchTerm || activeFilter !== "all");
+      const isOpen = forceOpen || openAlbums.has(album.id);
+      hdr.className = 'album-header' + (isOpen ? '' : ' collapsed');
+      hdr.innerHTML = `
+        <div class="album-left">
+          <span class="album-name">${album.title}</span>
+          <span class="album-year">${album.year}</span>
+        </div>
+        <div class="album-right">
+          <span class="album-progress">${heardCount}/${album.songs.length}</span>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+          <span class="chevron">▾</span>
+        </div>`;
+
+      const list = document.createElement('div');
+      list.className = 'song-list' + (isOpen ? ' open' : '');
+
+      hdr.onclick = () => toggleAlbum(album.id, hdr, list);
+
+      let albumHasVisible = false;
+      album.songs.forEach((song, i) => {
+        const k = key(album.id, i);
+        const s = state[k] || {};
+        const matchF = matchesFilter(k);
+        const matchS = !searchTerm || song.toLowerCase().includes(searchTerm);
+        const visible = matchF && matchS;
+        if (visible) albumHasVisible = true;
+
+        const row = document.createElement('div');
+        row.className = 'song-row' + (visible ? '' : ' filtered-out');
+        row.innerHTML = `
+          <span class="song-num">${i + 1}</span>
+          <span class="song-name">${song}</span>
+          <div class="song-btns">
+            <button class="sbt ${s.heard ? 'on-heard' : ''}" title="Heard" data-a="${album.id}" data-i="${i}" data-t="heard">👂</button>
+            <button class="sbt ${s.like  ? 'on-like'  : ''}" title="Like"  data-a="${album.id}" data-i="${i}" data-t="like">👍</button>
+            <button class="sbt ${s.love  ? 'on-love'  : ''}" title="Love"  data-a="${album.id}" data-i="${i}" data-t="love">❤️</button>
+          </div>`;
+        list.appendChild(row);
+      });
+
+      if (albumHasVisible) {
+        artistHasVisible = true;
+        block.appendChild(hdr);
+        block.appendChild(list);
+        section.appendChild(block);
+      }
+    });
+
+    if (artistHasVisible) {
+      container.appendChild(section);
+      anyVisible = true;
+    }
+  });
+
+  if (!anyVisible) {
+    container.innerHTML = '<div class="empty-state">No songs match your current filters.</div>';
+  }
+
+  container.querySelectorAll('.sbt').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      toggle(btn.dataset.a, parseInt(btn.dataset.i), btn.dataset.t);
+    });
+  });
+
+  updateExpandBtn();
+}
+
+renderAll();
+</script>
+</body>
+</html>
